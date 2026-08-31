@@ -8,7 +8,7 @@ end)
 -- Jeda 2 detik biar Chiyo Hub-nya selesai loading dulu
 task.wait(2)
 
--- 2. Jalankan Custom UI Bypass Treadmill kita
+-- 2. Jalankan Custom UI & Jump-Bypass Treadmill
 task.spawn(function()
     if not game:IsLoaded() then
         game.Loaded:Wait()
@@ -18,16 +18,17 @@ task.spawn(function()
     local Workspace = game:GetService("Workspace")
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
 
     local targetGui = CoreGui
     pcall(function() if gethui then targetGui = gethui() end end)
-    if not targetGui then targetGui = Players.LocalPlayer:WaitForChild("PlayerGui") end
+    if not targetGui then targetGui = LocalPlayer:WaitForChild("PlayerGui") end
 
     if targetGui:FindFirstChild("TreadmillBypassUI") then
         targetGui.TreadmillBypassUI:Destroy()
     end
 
-    local ConfigFile = "TreadmillBypass_Config.json"
+    local ConfigFile = "TreadmillBypass_Config_Chiyo.json"
     local Config = { BypassOn = false }
 
     if isfile and isfile(ConfigFile) then
@@ -67,7 +68,7 @@ task.spawn(function()
     Title.Position = UDim2.new(0, 10, 0, 0)
     Title.Size = UDim2.new(0.6, 0, 1, 0)
     Title.Font = Enum.Font.GothamBold
-    Title.Text = "Treadmill Bypass"
+    Title.Text = "Jump-Bypass"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 13
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -115,6 +116,7 @@ task.spawn(function()
         if state then
             ToggleButton.Text = "Bypass: ON"
             ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+            
             for _, obj in pairs(Workspace:GetDescendants()) do
                 for _, keyword in pairs(keywords) do
                     if string.find(string.lower(obj.Name), keyword) then
@@ -125,10 +127,33 @@ task.spawn(function()
                             end
                             if not alreadySaved then
                                 table.insert(savedTreadmills, {Instance = obj, Parent = obj.Parent})
+                                
+                                for _, child in pairs(obj:GetDescendants()) do
+                                    if child:IsA("ProximityPrompt") or child:IsA("TouchTransmitter") or child:IsA("ClickDetector") then
+                                        child:Destroy()
+                                    elseif child:IsA("BasePart") then
+                                        child.CanCollide = false
+                                        child.CanTouch = false
+                                    end
+                                end
+                                
                                 obj.Parent = nil
                             end
                         end
                     end
+                end
+            end
+            
+            local char = LocalPlayer.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                local rootPart = char:FindFirstChild("HumanoidRootPart")
+                if humanoid then
+                    humanoid.Sit = false
+                    humanoid.Jump = true
+                end
+                if rootPart then
+                    rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 3.5, 0)
                 end
             end
         else
@@ -165,5 +190,8 @@ task.spawn(function()
         ScreenGui:Destroy()
     end)
 
-    applyBypass(Config.BypassOn)
+    if Config.BypassOn then
+        task.wait(1)
+        applyBypass(true)
+    end
 end)
