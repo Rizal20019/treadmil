@@ -1,14 +1,14 @@
--- 1. Jalankan Ouroboros Hub di background thread
+-- 1. Jalankan Chiyo Hub di background thread
 task.spawn(function()
     pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/joustingmatch/Ouroboros/main/loader.lua"))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/kaisenlmao/loader/refs/heads/main/chiyo.lua"))()
     end)
 end)
 
--- Jeda 2 detik biar Ouroboros Hub-nya selesai loading dulu
+-- Jeda 2 detik biar Chiyo Hub-nya selesai loading dulu
 task.wait(2)
 
--- 2. Jalankan Custom UI & Absolute Anti-Treadmill Bypass
+-- 2. Jalankan Custom UI & Jump-Bypass Treadmill
 task.spawn(function()
     if not game:IsLoaded() then
         game.Loaded:Wait()
@@ -18,7 +18,6 @@ task.spawn(function()
     local Workspace = game:GetService("Workspace")
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
     local LocalPlayer = Players.LocalPlayer
 
     local targetGui = CoreGui
@@ -29,7 +28,7 @@ task.spawn(function()
         targetGui.TreadmillBypassUI:Destroy()
     end
 
-    local ConfigFile = "TreadmillBypass_Config_Ouro.json"
+    local ConfigFile = "TreadmillBypass_Config_Chiyo.json"
     local Config = { BypassOn = false }
 
     if isfile and isfile(ConfigFile) then
@@ -69,7 +68,7 @@ task.spawn(function()
     Title.Position = UDim2.new(0, 10, 0, 0)
     Title.Size = UDim2.new(0.6, 0, 1, 0)
     Title.Font = Enum.Font.GothamBold
-    Title.Text = "Absolute Bypass"
+    Title.Text = "Jump-Bypass"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 13
     Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -110,7 +109,6 @@ task.spawn(function()
     Instance.new("UICorner", ToggleButton)
 
     local savedTreadmills = {}
-    local bypassConnection = nil
     local isMinimized = false
 
     local function applyBypass(state)
@@ -119,66 +117,51 @@ task.spawn(function()
             ToggleButton.Text = "Bypass: ON"
             ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
             
-            -- Fungsi utama pembersihan
-            local function clearTreadmills()
-                for _, obj in pairs(Workspace:GetDescendants()) do
-                    for _, keyword in pairs(keywords) do
-                        if string.find(string.lower(obj.Name), keyword) then
-                            if obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart") then
-                                local alreadySaved = false
-                                for _, v in pairs(savedTreadmills) do
-                                    if v.Instance == obj then alreadySaved = true break end
-                                end
-                                if not alreadySaved then
-                                    table.insert(savedTreadmills, {Instance = obj, Parent = obj.Parent})
-                                    
-                                    for _, child in pairs(obj:GetDescendants()) do
-                                        if child:IsA("ProximityPrompt") or child:IsA("TouchTransmitter") or child:IsA("ClickDetector") then
-                                            child:Destroy()
-                                        elseif child:IsA("BasePart") then
-                                            child.CanCollide = false
-                                            child.CanTouch = false
-                                        end
+            -- Sembunyikan & matikan fungsi treadmill
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                for _, keyword in pairs(keywords) do
+                    if string.find(string.lower(obj.Name), keyword) then
+                        if obj:IsA("Model") or obj:IsA("Folder") or obj:IsA("BasePart") then
+                            local alreadySaved = false
+                            for _, v in pairs(savedTreadmills) do
+                                if v.Instance == obj then alreadySaved = true break end
+                            end
+                            if not alreadySaved then
+                                table.insert(savedTreadmills, {Instance = obj, Parent = obj.Parent})
+                                
+                                -- Hapus pemicu sentuhan & matikan tabrakan
+                                for _, child in pairs(obj:GetDescendants()) do
+                                    if child:IsA("ProximityPrompt") or child:IsA("TouchTransmitter") or child:IsA("ClickDetector") then
+                                        child:Destroy()
+                                    elseif child:IsA("BasePart") then
+                                        child.CanCollide = false
+                                        child.CanTouch = false
                                     end
-                                    
-                                    obj.Parent = nil
                                 end
+                                
+                                obj.Parent = nil
                             end
                         end
                     end
                 end
             end
-
-            clearTreadmills()
             
-            -- Pake Heartbeat loop supaya kalau game-nya spawn treadmill baru, langsung dihantam & di-hide seketika!
-            bypassConnection = RunService.Heartbeat:Connect(function()
-                clearTreadmills()
-            end)
-            
-            -- Anti-Stuck & Anti-Trap Teleport pas awal aktif / login
+            -- Efek otomatis loncat + lepas duduk biar bebas dari jeratan
             local char = LocalPlayer.Character
             if char then
                 local humanoid = char:FindFirstChildOfClass("Humanoid")
                 local rootPart = char:FindFirstChild("HumanoidRootPart")
                 if humanoid then
                     humanoid.Sit = false
-                    humanoid.Jump = true
+                    humanoid.Jump = true -- Otomatis loncat seketika!
                 end
                 if rootPart then
-                    -- Geser sedikit posisi karakter dari titik spawn biar lepas dari jebakan alat
-                    rootPart.CFrame = rootPart.CFrame + Vector3.new(2, 4, 0)
+                    rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 3.5, 0) -- Angkat sedikit ke atas
                 end
             end
         else
             ToggleButton.Text = "Bypass: OFF"
             ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-            
-            if bypassConnection then
-                bypassConnection:Disconnect()
-                bypassConnection = nil
-            end
-            
             for _, data in pairs(savedTreadmills) do
                 if data.Instance then data.Instance.Parent = data.Parent end
             end
@@ -210,9 +193,9 @@ task.spawn(function()
         ScreenGui:Destroy()
     end)
 
-    -- Auto-apply kalau config aktif
+    -- Auto-apply kalau config aktif, jadi langsung loncat & hilang begitu masuk game
     if Config.BypassOn then
-        task.wait(1.5)
+        task.wait(1)
         applyBypass(true)
     end
 end)
